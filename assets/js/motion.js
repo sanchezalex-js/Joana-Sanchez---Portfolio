@@ -2,32 +2,38 @@
   const motion = window.matchMedia('screen and (prefers-reduced-motion: no-preference)');
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
+  // Fade and slide each section into view once as you scroll.
   if ('IntersectionObserver' in window && typeof Element.prototype.animate === 'function') {
-    const reveal = new IntersectionObserver(entries => {
-      for (const {target, isIntersecting} of entries) {
+    const revealOnScroll = new IntersectionObserver((entries, observer) => {
+      for (const { target, isIntersecting } of entries) {
         if (!isIntersecting) continue;
-        reveal.unobserve(target);
+
+        observer.unobserve(target);
         if (!motion.matches || target.contains(document.activeElement)) continue;
 
         target.animate(
           [
-            {opacity: 0.65, translate: '0 12px'},
-            {opacity: 1, translate: '0 0'}
+            { opacity: 0.35, translate: '0 24px' },
+            { opacity: 1, translate: '0 0' }
           ],
-          {duration: 420, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)'}
+          { duration: 600, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' }
         );
       }
-    });
+    }, { rootMargin: '0px 0px -24px 0px' });
 
-    const elements = document.querySelectorAll(
-      '.section-heading, .about-copy, .internship-strip, [data-glass], .contact-main'
+    const sections = document.querySelectorAll(
+      '.section-heading, .internship-strip, [data-glass], .contact-main'
     );
-    for (const element of elements) {
-      const {top, bottom} = element.getBoundingClientRect();
-      if (top >= window.innerHeight || bottom <= 0) reveal.observe(element);
+
+    for (const section of sections) {
+      // Keep content on the first screen fully visible when the page loads.
+      if (section.getBoundingClientRect().top >= window.innerHeight) {
+        revealOnScroll.observe(section);
+      }
     }
   }
 
+  // Move the glass card glow with the pointer.
   for (const card of document.querySelectorAll('[data-glass]')) {
     let frame = 0;
     let pointer;
@@ -39,7 +45,7 @@
 
       frame = requestAnimationFrame(() => {
         frame = 0;
-        const {left, top, width, height} = card.getBoundingClientRect();
+        const { left, top, width, height } = card.getBoundingClientRect();
         const x = Math.round((pointer.clientX - left) * 100 / width);
         const y = Math.round((pointer.clientY - top) * 100 / height);
         card.style.setProperty('--glow-x', `${x}%`);
